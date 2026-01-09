@@ -8,12 +8,11 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stdio.h"
-#include "string.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>   // 解决 FILE, printf, sprintf 报错
+#include <string.h>  // 解决 strlen 报错
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -84,7 +83,7 @@ void ESP8266_Init_Auto(void) {
     // 4. 连接电脑服务器 (NetAssist)
     // ⚠️【修改】把 192.168.111.85 换成你刚才 ping 通的电脑 IP
     // ⚠️【修改】8888 换成你的端口号
-    ESP_SendCmd("AT+CIPSTART=\"TCP\",\"192.168.111.85\",8888\r\n");
+    ESP_SendCmd("AT+CIPSTART=\"TCP\",\"192.168.60.85\",8888\r\n");
     
     // 连接服务器也需要一点时间
     HAL_Delay(2000);
@@ -172,7 +171,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  char dataBuffer[128];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -211,8 +210,7 @@ int main(void)
   // 同时打印给电脑看，证明程序跑到这一步了
  // printf("Sent AT command to ESP8266 via USART2\r\n");
   /* USER CODE END 2 */
-	float temp,humi;
-	char dataBuffer[64]; // 定义一个缓存区用来存放要发的数据
+   float temp,humi;
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -224,7 +222,12 @@ int main(void)
 	      HAL_UART_Transmit(WIFI_UART, (uint8_t *)dataBuffer, strlen(dataBuffer), 1000);
          // printf("T=%.1f  H=%.1f\r\n", t, h);
       HAL_Delay(2000); // 间隔2秒读一次
-      
+      // 假设 PA4 接继电器
+    if (temp > 26.0) {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);  
+   } else {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -399,7 +402,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, FAN_Pin|DHT11_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : FAN_Pin */
+  GPIO_InitStruct.Pin = FAN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(FAN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : DHT11_Pin */
   GPIO_InitStruct.Pin = DHT11_Pin;
